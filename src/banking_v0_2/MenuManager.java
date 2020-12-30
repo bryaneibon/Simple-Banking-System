@@ -1,4 +1,6 @@
-package banking;
+package banking_v0_2;
+
+import banking_v0_2.luhnAlgorith.LuhnAlgorith;
 
 import java.util.*;
 
@@ -47,20 +49,21 @@ public class MenuManager implements DashBoardManager {
 
     public void createAccount() {
         Random random = new Random();
-        //Account Number
-        String accountNumber = "";
-        while ("".equals(accountNumber)){
+
+        //Account Identifier Number
+        String accountIdentifier = "";
+        while ("".equals(accountIdentifier)){
             int cardPart1 = random.nextInt(99999);
             int cardPart2 = random.nextInt(99999);
-            accountNumber = cardPart1+""+cardPart2;
-            if(accountNumber.length() != 10){
-                accountNumber = "";
+            accountIdentifier = cardPart1+""+cardPart2;
+            if(accountIdentifier.length() != 10 || !LuhnAlgorith.checkLuhnAlgorith(accountIdentifier)){
+                accountIdentifier = "";
             }
         }
 
         //Pin Number
         String pinNumber = "";
-        while ("".equals(pinNumber)){
+        while (pinNumber.isEmpty()){
             int pin = random.nextInt(9999);
             pinNumber = String.valueOf(pin);
             if(pinNumber.length() != 4){
@@ -68,17 +71,18 @@ public class MenuManager implements DashBoardManager {
             }
         }
 
-        CreditCardHandler<Long, Integer> account = new CreditCardHandler<>(Long.parseLong(Constant.ISSUER_IDENTIFICATION_NUMBER+""+Long.parseLong(accountNumber)), Integer.parseInt(pinNumber));
+        //BIN (Bank Identification Number) + Account Identifier Number
+        CreditCardHandler<Long, Integer> account = new CreditCardHandler<>(Long.parseLong(Constant.ISSUER_IDENTIFICATION_NUMBER+accountIdentifier), Integer.parseInt(pinNumber));
 
         //Store all the created account.
         accountList.put(account.getCreditCardNumber(), account.getCreditCardPin());
 
         System.out.println("\nYour card has been created\n" +
-                "Your card number:\n"            +
-                account.getCreditCardNumber()   +
-                "\nYour card PIN:\n"            +
-                account.getCreditCardPin()      +
-                "\n");
+                           "Your card number:\n"            +
+                           account.getCreditCardNumber()    +
+                           "\nYour card PIN:\n"             +
+                           account.getCreditCardPin()       +
+                           "\n");
     }
 
     public void LogIntoAccount() {
