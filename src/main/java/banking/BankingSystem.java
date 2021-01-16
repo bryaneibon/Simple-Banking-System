@@ -16,9 +16,6 @@ import banking.dashboard.MenuManager;
  * pin TEXT
  * balance INTEGER DEFAULT 0
  *
- * Also, we should read the database file name from the command line argument.
- * Filename should be passed to the program using -fileName argument, for example, -fileName db.s3db.
- *
  * PS: The database file should be created when the program starts, if it hasn’t yet been created.
  * And all created cards should be stored in the database from now.
  */
