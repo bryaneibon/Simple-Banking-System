@@ -2,7 +2,7 @@ package banking.model;
 
 import banking.dashboard.MenuManager;
 import banking.dao.DatabaseConnectorService;
-import banking.luhnAlgorith.LuhnAlgorith;
+import banking.luhnAlgorithm.LuhnAlgorithm;
 
 import java.util.Map;
 import java.util.Random;
@@ -30,7 +30,7 @@ public class AccountManagerImpl implements AccountManager{
             int cardPart1 = random.nextInt(99999);
             int cardPart2 = random.nextInt(99999);
             accountIdentifier = cardPart1+""+cardPart2;
-            if(accountIdentifier.length() != 10 || !LuhnAlgorith.checkLuhnAlgorith(accountIdentifier)){
+            if(accountIdentifier.length() != 10 || !LuhnAlgorithm.checkLuhnAlgorithm(accountIdentifier)){
                 accountIdentifier = "";
             }
         }
@@ -67,13 +67,13 @@ public class AccountManagerImpl implements AccountManager{
         accountList.putAll(DatabaseConnectorService.getCreditCardList());
 
         System.out.println("Enter your card number:");
-        long cardNumber = Constant.SCANNER.nextLong();
+        long cardNumberLogIn = Constant.SCANNER.nextLong();
         System.out.println("Enter your PIN:");
-        int pin = Constant.SCANNER.nextInt();
+        int pinLogIn = Constant.SCANNER.nextInt();
 
         String response = "";
         for (Map.Entry<Long, Integer> entry : accountList.entrySet()) {
-            if (cardNumber == entry.getKey() && pin == entry.getValue()){
+            if (cardNumberLogIn == entry.getKey() && pinLogIn == entry.getValue()){
                 response = "\nYou have successfully logged in!\n";
                 break;
             } else {
@@ -87,13 +87,52 @@ public class AccountManagerImpl implements AccountManager{
             menu.displayAccountMenu();
             boolean exit = false;
             do {
+                int currentBalance = dbConnector.getBalance(String.valueOf(cardNumberLogIn), String.valueOf(pinLogIn));
+
                 String userChoice = Constant.SCANNER.next();
                 switch (userChoice){
                     case "1":
-                        System.out.println("\nBalance: "+dbConnector.showBalance(String.valueOf(cardNumber), String.valueOf(pin))+"\n");
+                        System.out.println("\nBalance: "+currentBalance+"\n");
                         menu.displayAccountMenu();
                         break;
                     case "2":
+                        System.out.println("\nEnter income:");
+                        int newBalance = Constant.SCANNER.nextInt();
+                        dbConnector.addIncome(String.valueOf(cardNumberLogIn), String.valueOf(pinLogIn), currentBalance, newBalance);
+                        menu.displayAccountMenu();
+                        break;
+                    case "3":
+                        System.out.println("\nTransfer\n Enter card number:");
+                        Long creditCardNumber = Constant.SCANNER.nextLong();
+                        if (accountList.containsKey(creditCardNumber)){
+                            if (creditCardNumber.equals(cardNumberLogIn)){
+                                System.out.println("You can't transfer money to the same account!\n");
+                            } else {
+                                System.out.println("Enter how much money you want to transfer:");
+                                int amountToTransfer = Constant.SCANNER.nextInt();
+
+                                if (currentBalance < amountToTransfer) {
+                                    System.out.println("Not enough money!\n");
+                                } else {
+                                    int accountReceiverBalance = dbConnector.getAccountReceiverBalance(String.valueOf(creditCardNumber));
+                                    dbConnector.doTransfert(String.valueOf(cardNumberLogIn), String.valueOf(creditCardNumber), currentBalance, amountToTransfer, accountReceiverBalance);
+                                    System.out.println("Success!\n");
+                                }
+                            }
+                        } else if (!LuhnAlgorithm.checkLuhnAlgorithm(String.valueOf(creditCardNumber))){
+                            System.out.println("Probably you made a mistake in the card number. Please try again!\n");
+                        } else if(!accountList.containsKey(creditCardNumber)){
+                            System.out.println("Such a card does not exist.\n");
+                        }
+                        menu.displayAccountMenu();
+                        break;
+                    case "4":
+                        dbConnector.closeAccount(String.valueOf(cardNumberLogIn));
+                        accountList.clear(); // Clear the accountList because we'll always fill him at every log in attempt.
+                        System.out.println("\nThe account has been closed!\n");
+                        exit = true;
+                        break;
+                    case "5":
                         System.out.println("\nYou have successfully logged out!\n");
                         exit = true;
                         accountList.clear(); // Clear the accountList because we'll always fill him at every log in attempt.
