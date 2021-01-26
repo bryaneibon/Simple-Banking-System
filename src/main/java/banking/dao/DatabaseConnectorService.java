@@ -137,38 +137,13 @@ public class DatabaseConnectorService {
         }
     }
 
-
-    /**
-     * Select a specific row into the card table
-     *
-     * @param number is the Credit card number.
-     * @param pin is the pin associated to the credit card.
-     */
-    public void selectCreditCard(String number, String pin) {
-        String sql = "SELECT number, pin FROM card WHERE number = ? AND pin = ?";
-
-        try (Connection con = this.databaseConnector();
-            PreparedStatement statement = con.prepareStatement(sql)) {
-            // Set the values.
-            statement.setString(1, number);
-            statement.setString(2, pin);
-
-            ResultSet result = statement.executeQuery();
-
-            System.out.println(result.getString("number") + "\t" + result.getString("pin"));
-
-        } catch (SQLException e){
-            System.out.println(e.getMessage());
-        }
-    }
-
     /**
      * Display the balance available for a specific credit card.
      *
      * @param number is the Credit card number.
      * @param pin is the pin associated to the credit card.
      */
-    public int showBalance(String number, String pin) {
+    public int getBalance(String number, String pin) {
         String sql = "SELECT balance FROM card WHERE number = ? AND pin = ?";
         int balance = 0;
         try (Connection con = this.databaseConnector();
@@ -185,6 +160,128 @@ public class DatabaseConnectorService {
             System.out.println(e.getMessage());
         }
         return balance;
+    }
+
+    /**
+     * Display the balance available for a specific credit card.
+     * @param number is the Credit card number.
+     */
+    public int getAccountReceiverBalance(String number) {
+        String sql = "SELECT balance FROM card WHERE number = ?";
+        int balance = 0;
+        try (Connection con = this.databaseConnector();
+             PreparedStatement statement = con.prepareStatement(sql)) {
+            // Set the values.
+            statement.setString(1, number);
+            ResultSet result = statement.executeQuery();
+
+            balance = result.getInt("balance");
+
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+        return balance;
+    }
+
+    /**
+     * Delete a specific credit card from the Database.
+     * @param number is the Credit card number.
+     */
+    public void closeAccount(String number) {
+        String deleteAccount = "DELETE FROM card WHERE number = ?";
+        try (Connection con = this.databaseConnector();
+             PreparedStatement statementDeleteAccount = con.prepareStatement(deleteAccount)) {
+
+            // Set the values.
+            statementDeleteAccount.setString(1, number);
+            statementDeleteAccount.executeUpdate();
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /**
+     * Add income to a specific account.
+     *
+     * @param number is the Credit card number.
+     * @param pin is the pin associated to the credit card.
+     * @param currentBalance is the current balance link to the credit card.
+     * @param newBalance which is the Updated balance related to the account.
+     */
+    public void addIncome(String number, String pin, int currentBalance, int newBalance) {
+        String updateIncome = "UPDATE card SET balance = ? WHERE number = ? AND pin = ?";
+        Connection con = null;
+        try {
+            con = this.databaseConnector();
+            PreparedStatement statementIncomeUpdated = con.prepareStatement(updateIncome);
+
+            // Disable auto-commit mode
+            con.setAutoCommit(false);
+
+            // Set the new income.
+            statementIncomeUpdated.setInt(1, currentBalance + newBalance);
+            statementIncomeUpdated.setString(2, number);
+            statementIncomeUpdated.setString(3, pin);
+            statementIncomeUpdated.executeUpdate();
+
+            con.commit();
+            System.out.println("Income was added!\n");
+
+        } catch (SQLException e) {
+            try {
+                System.err.print("Transaction is being rolled back...");
+                con.rollback();
+            } catch (SQLException excep) {
+                excep.printStackTrace();
+            }
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /**
+     * Do a money transfer from one account to another.
+     *
+     * @param accountSender is the Credit card sender number.
+     * @param accountReceiver is the Credit card receiver number.
+     * @param accountSenderBalance is the sender balance in his credit card.
+     * @param accountReceiverBalance is the receiver balance in his credit card.
+     * @param amountToTransfer is the amount the sender is willing to transfer.
+     */
+    public void doTransfert(String accountSender, String accountReceiver, int accountSenderBalance, int amountToTransfer, int accountReceiverBalance) {
+        String updateAccountSenderBalance = "UPDATE card SET balance = ? WHERE number = ?";
+        String updateAccountReceiverBalance = "UPDATE card SET balance = ? WHERE number = ?";
+
+        Connection con = null;
+        try {
+            con = this.databaseConnector();
+            PreparedStatement statementUpdateAccountSenderBalance = con.prepareStatement(updateAccountSenderBalance);
+            PreparedStatement statementUpdateAccountReceiverBalance = con.prepareStatement(updateAccountReceiverBalance);
+
+
+            // Disable auto-commit mode
+            con.setAutoCommit(false);
+
+            // Set the new sender balance.
+            statementUpdateAccountSenderBalance.setInt(1, accountSenderBalance - amountToTransfer);
+            statementUpdateAccountSenderBalance.setString(2, accountSender);
+            statementUpdateAccountSenderBalance.executeUpdate();
+
+            // Set the new receiver balance.
+            statementUpdateAccountReceiverBalance.setInt(1, accountReceiverBalance + amountToTransfer);
+            statementUpdateAccountReceiverBalance.setString(2, accountReceiver);
+            statementUpdateAccountReceiverBalance.executeUpdate();
+
+            con.commit();
+
+        } catch (SQLException e) {
+            try {
+                System.err.print("Transaction is being rolled back...");
+                con.rollback();
+            } catch (SQLException excep) {
+                excep.printStackTrace();
+            }
+            System.out.println(e.getMessage());
+        }
     }
 
     /**

@@ -1,14 +1,20 @@
-package banking.luhnAlgorith;
+package banking.luhnAlgorithm;
 
 import banking.model.Constant;
 
 import java.util.ArrayList;
 
-public class LuhnAlgorith {
+public class LuhnAlgorithm {
 
-    public static boolean checkLuhnAlgorith(String accountIdentifier){
+    public static boolean checkLuhnAlgorithm(String accountIdentifier){
         //BIN (Bank Identification Number) + Account Identifier Number
-        String creditCardNumber = Constant.ISSUER_IDENTIFICATION_NUMBER + accountIdentifier;
+        String creditCardNumber;
+        if (accountIdentifier.length() <= 10){
+            creditCardNumber = Constant.ISSUER_IDENTIFICATION_NUMBER + accountIdentifier;
+        } else {
+            creditCardNumber = accountIdentifier;
+        }
+
         String[] originalNumbers = creditCardNumber.split("");
 
         ArrayList<Integer> luhnArrayList = new ArrayList<>();
